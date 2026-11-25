@@ -299,6 +299,76 @@ export default function CalendarStyles() {
         .ok-content-reveal { animation: none; clip-path: none; }
         .ok-roll-anim, .ok-shadow-anim { display: none; }
       }
+
+      /* ── Swipe / month-transition ──────────────────────────── */
+
+      /*
+       * ok-swipe-surface: covers the full paper so every pointer event
+       * on the calendar is captured. touch-action: pan-y lets the browser
+       * own vertical scrolling while our hook intercepts horizontal swipes.
+       */
+      .ok-swipe-surface {
+        touch-action: pan-y;
+        user-select: none;
+        -webkit-user-select: none;
+        overflow: hidden;
+        position: relative;
+      }
+
+      /*
+       * ok-slide-content: wraps the calendar content that slides in/out.
+       * We use CSS classes (toggled from React state) to trigger the
+       * animations rather than inline styles, keeping React rendering clean.
+       */
+      .ok-slide-content {
+        width: 100%;
+      }
+
+      /* Idle / enter state — content visible, no transform */
+      .ok-slide-enter {
+        animation: ok-slide-in 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+      }
+
+      /* Exit: slides out to the left (going to next month) */
+      .ok-slide-exit-left {
+        animation: ok-slide-out-left 0.28s cubic-bezier(0.55, 0, 0.1, 1) both;
+        pointer-events: none;
+      }
+
+      /* Exit: slides out to the right (going to previous month) */
+      .ok-slide-exit-right {
+        animation: ok-slide-out-right 0.28s cubic-bezier(0.55, 0, 0.1, 1) both;
+        pointer-events: none;
+      }
+
+      @keyframes ok-slide-in {
+        /* Direction is determined by which exit fired before this.
+           We always enter from a neutral (translateX 0) since the
+           DOM swap happens between exit and enter. A subtle fade
+           keeps the transition feeling like a page turn. */
+        from { opacity: 0.4; transform: translateX(0) scale(0.98); }
+        to   { opacity: 1;   transform: translateX(0) scale(1); }
+      }
+
+      @keyframes ok-slide-out-left {
+        from { opacity: 1;   transform: translateX(0); }
+        to   { opacity: 0;   transform: translateX(-6%); }
+      }
+
+      @keyframes ok-slide-out-right {
+        from { opacity: 1;   transform: translateX(0); }
+        to   { opacity: 0;   transform: translateX(6%); }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .ok-slide-enter,
+        .ok-slide-exit-left,
+        .ok-slide-exit-right {
+          animation: none;
+          transform: none;
+          opacity: 1;
+        }
+      }
     `}</style>
   );
 }

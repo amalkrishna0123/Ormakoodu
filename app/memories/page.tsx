@@ -1,5 +1,7 @@
 import Navbar from '@/components/home/Navbar';
 import HomeFooter from '@/components/home/HomeFooter';
+import PageHeaderBanner from '@/components/common/PageHeaderBanner';
+import { HiOutlinePhoto } from 'react-icons/hi2';
 
 const MEMORY_PREVIEWS = [
   {
@@ -26,6 +28,8 @@ const MEMORY_PREVIEWS = [
 ];
 
 export default function MemoriesPage() {
+  const memoriesCount = MEMORY_PREVIEWS.length;
+
   return (
     <div
       className="flex min-h-screen flex-1 flex-col bg-white text-zinc-950"
@@ -33,24 +37,17 @@ export default function MemoriesPage() {
     >
       <Navbar />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-8 pb-6 sm:px-6 lg:px-8">
-        <div className="mb-6 border-b border-zinc-100 pb-5">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff5fa] px-3 py-1 text-xs font-medium text-[#c0185a]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#e91e8c]" aria-hidden="true" />
-            Memories
-          </span>
-          <h1 className="mt-2.5 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
-            Family Memories
-          </h1>
-          <p
-            className="mt-1 text-sm text-zinc-500"
-            style={{
-              fontFamily: "var(--font-noto-malayalam), 'Noto Sans Malayalam', sans-serif",
-            }}
-          >
-            കുടുംബത്തിന്റെ പ്രിയപ്പെട്ട ഓർമ്മക്കുറിപ്പുകൾ
-          </p>
-        </div>
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-6 pb-6 sm:px-6 lg:px-8">
+        <PageHeaderBanner
+          category="Memories"
+          title="Family Memories"
+          malayalamSubtitle="കൂട്ടായ്മയുടെ പ്രിയപ്പെട്ട ഓർമ്മക്കുറിപ്പുകൾ"
+          imageSrc="/images/headers/memories-banner.jpg"
+          imageAlt="Sunlit traditional Kerala tharavadu veranda with a vintage family photo album, brass lamp, and jasmine flowers"
+          imagePosition="center center"
+          countLabel={`${memoriesCount} Memories`}
+          icon={<HiOutlinePhoto className="h-3.5 w-3.5" aria-hidden="true" />}
+        />
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {MEMORY_PREVIEWS.map((memory) => (

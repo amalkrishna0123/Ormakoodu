@@ -12,12 +12,17 @@ import UpcomingEvents from "@/components/home/UpcomingEvents";
 import QuickActions from "@/components/home/QuickActions";
 import HomeFooter from "@/components/home/HomeFooter";
 
+/**
+ * DynamicCalendar — server component that builds the initial month data at
+ * request time (SSR).  CalendarPaper is a client component that takes over
+ * month navigation from that seed value; it never re-fetches from the server.
+ */
 async function DynamicCalendar() {
   await connection();
-  // Build calendar data for the current month at request time.
-  // Replace buildMonthData() with your real data source when ready.
-  const monthData = buildMonthData();
-  return <CalendarPaper monthData={monthData} />;
+  // Build the initial month data server-side so the first render is correct.
+  // CalendarPaper's internal state drives all subsequent month changes.
+  const initialMonthData = buildMonthData();
+  return <CalendarPaper monthData={initialMonthData} />;
 }
 
 export default function Home() {

@@ -2,8 +2,13 @@ import Navbar from '@/components/home/Navbar';
 import HomeFooter from '@/components/home/HomeFooter';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import FamilyHighlights from '@/components/home/FamilyHighlights';
+import PageHeaderBanner from '@/components/common/PageHeaderBanner';
+import { UPCOMING_EVENTS_PREVIEW } from '@/lib/homePreviewData';
+import { HiOutlineCalendarDays } from 'react-icons/hi2';
 
 export default function EventsPage() {
+  const upcomingCount = UPCOMING_EVENTS_PREVIEW.length;
+
   return (
     <div
       className="flex min-h-screen flex-1 flex-col bg-white text-zinc-950"
@@ -11,24 +16,17 @@ export default function EventsPage() {
     >
       <Navbar />
 
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-8 pb-6 sm:px-6 lg:px-8">
-        <div className="mb-6 border-b border-zinc-100 pb-5">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff5fa] px-3 py-1 text-xs font-medium text-[#c0185a]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#e91e8c]" aria-hidden="true" />
-            Events
-          </span>
-          <h1 className="mt-2.5 text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl">
-            Family Events &amp; Occasions
-          </h1>
-          <p
-            className="mt-1 text-sm text-zinc-500"
-            style={{
-              fontFamily: "var(--font-noto-malayalam), 'Noto Sans Malayalam', sans-serif",
-            }}
-          >
-            പിറന്നാളുകൾ, വിവാഹ വാർഷികങ്ങൾ, കുടുംബ ചടങ്ങുകൾ
-          </p>
-        </div>
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 pt-6 pb-6 sm:px-6 lg:px-8">
+        <PageHeaderBanner
+          category="Events"
+          title="Family Events & Occasions"
+          malayalamSubtitle="പിറന്നാളുകൾ, വിവാഹ വാർഷികങ്ങൾ, കുടുംബ ആഘോഷങ്ങൾ"
+          imageSrc="/images/headers/events-banner.jpg"
+          imageAlt="Kerala family celebrating together around a lit brass nilavilakku lamp with marigold and jasmine flowers"
+          imagePosition="center 35%"
+          countLabel={`${upcomingCount} Upcoming`}
+          icon={<HiOutlineCalendarDays className="h-3.5 w-3.5" aria-hidden="true" />}
+        />
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <UpcomingEvents />
