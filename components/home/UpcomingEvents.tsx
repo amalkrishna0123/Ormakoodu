@@ -1,24 +1,41 @@
-import React from 'react';
-import {
-  UPCOMING_EVENTS_PREVIEW,
-  type EventCategory,
-} from '@/lib/homePreviewData';
+'use client';
 
-const CATEGORY_LABELS: Record<EventCategory, string> = {
-  birthday: 'Birthday',
-  anniversary: 'Anniversary',
-  occasion: 'Occasion',
-  celebration: 'Celebration',
-};
+import React, { useEffect, useMemo, useState } from 'react';
+import { subscribePublicEvents } from '@/lib/firestoreService';
+import { getUpcomingEvents } from '@/lib/eventUtils';
+import type { CalendarEventDoc } from '@/lib/types';
 
-const CATEGORY_STYLES: Record<EventCategory, string> = {
-  birthday: 'bg-[#fff0f7] text-[#c0185a]',
-  anniversary: 'bg-zinc-900 text-white',
-  occasion: 'bg-zinc-100 text-zinc-700',
-  celebration: 'bg-[#fdf2f8] text-[#9d174d]',
-};
+function getCategoryBadgeStyle(slug: string): string {
+  switch (slug) {
+    case 'birthday':
+      return 'bg-[#fff0f7] text-[#c0185a]';
+    case 'anniversary':
+      return 'bg-zinc-900 text-white';
+    case 'festival':
+    case 'family_gathering':
+      return 'bg-[#fdf2f8] text-[#9d174d]';
+    default:
+      return 'bg-zinc-100 text-zinc-700';
+  }
+}
 
 export default function UpcomingEvents() {
+  const [events, setEvents] = useState<CalendarEventDoc[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribePublicEvents(
+      (evs) => {
+        setEvents(evs);
+        setLoaded(true);
+      },
+      () => setLoaded(true)
+    );
+    return () => unsub();
+  }, []);
+
+  const upcomingList = useMemo(() => getUpcomingEvents(events), [events]);
+
   return (
     <section
       id="events"
@@ -44,57 +61,83 @@ export default function UpcomingEvents() {
           </p>
         </div>
         <span className="rounded-full bg-zinc-100 px-2.5 py-0.5 text-[11px] font-medium text-zinc-600">
-          {UPCOMING_EVENTS_PREVIEW.length}
+          {upcomingList.length}
         </span>
       </div>
 
-      <ul className="mt-3.5 divide-y divide-zinc-100">
-        {UPCOMING_EVENTS_PREVIEW.map((event) => (
-          <li
-            key={event.id}
-            className="flex items-start justify-between gap-3 py-3 first:pt-1 last:pb-0"
-          >
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="truncate text-sm font-medium text-zinc-950">
-                  {event.title}
-                </span>
-                <span
-                  className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${CATEGORY_STYLES[event.category]}`}
-                >
-                  {CATEGORY_LABELS[event.category]}
-                </span>
-              </div>
-              <p
-                className="mt-0.5 text-xs text-zinc-500"
-                style={{
-                  fontFamily:
-                    "var(--font-noto-malayalam), 'Noto Sans Malayalam', sans-serif",
-                }}
-              >
-                {event.malayalamTitle}
-                {event.familyMember ? ` · ${event.familyMember}` : ''}
-              </p>
-            </div>
+      {upcomingList.length === 0 ? (
+        <div className="py-6 text-center">
+          <p className="text-sm font-medium text-zinc-700">
+            {loaded ? 'No upcoming events' : 'Loading upcoming events…'}
+          </p>
+          <p className="mt-1 text-xs text-zinc-400">
+            {loaded
+              ? 'Events scheduled for today and future dates will appear here.'
+              : 'Connecting to Ormakoodu database…'}
+          </p>
+        </div>
+      ) : (
+        <ul className="mt-3.5 divide-y divide-zinc-100">
+          {upcomingList.map(({ event, gregorianLabel, malayalamDateLabel }) => {
+            const subDetail =
+              event.details?.personName ||
+              event.details?.coupleNames ||
+              event.details?.destination ||
+              event.details?.venue ||
+              '';
 
-            <div className="shrink-0 text-right">
-              <span className="block text-xs font-semibold text-zinc-900">
-                {event.dateLabel}
-              </span>
-              <span
-                className="block text-[11px] text-zinc-400"
-                style={{
-                  fontFamily:
-                    "var(--font-noto-malayalam), 'Noto Sans Malayalam', sans-serif",
-                }}
+            return (
+              <li
+                key={event.id}
+                className="flex items-start justify-between gap-3 py-3 first:pt-1 last:pb-0"
               >
-                {event.malayalamDateLabel}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="truncate text-sm font-medium text-zinc-950">
+                      {event.title}
+                    </span>
+                    <span
+                      className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${getCategoryBadgeStyle(
+                        event.categorySlug
+                      )}`}
+                    >
+                      {event.categoryName}
+                    </span>
+                  </div>
+                  {(event.malayalamTitle || subDetail) && (
+                    <p
+                      className="mt-0.5 text-xs text-zinc-500"
+                      style={{
+                        fontFamily:
+                          "var(--font-noto-malayalam), 'Noto Sans Malayalam', sans-serif",
+                      }}
+                    >
+                      {event.malayalamTitle || ''}
+                      {event.malayalamTitle && subDetail ? ' · ' : ''}
+                      {subDetail}
+                    </p>
+                  )}
+                </div>
+
+                <div className="shrink-0 text-right">
+                  <span className="block text-xs font-semibold text-zinc-900">
+                    {gregorianLabel}
+                  </span>
+                  <span
+                    className="block text-[11px] text-zinc-400"
+                    style={{
+                      fontFamily:
+                        "var(--font-noto-malayalam), 'Noto Sans Malayalam', sans-serif",
+                    }}
+                  >
+                    {malayalamDateLabel}
+                  </span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }
-

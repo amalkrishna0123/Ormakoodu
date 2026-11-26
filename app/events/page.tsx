@@ -1,13 +1,25 @@
+'use client';
+
+import React, { useEffect, useMemo, useState } from 'react';
 import Navbar from '@/components/home/Navbar';
 import HomeFooter from '@/components/home/HomeFooter';
 import UpcomingEvents from '@/components/home/UpcomingEvents';
 import FamilyHighlights from '@/components/home/FamilyHighlights';
 import PageHeaderBanner from '@/components/common/PageHeaderBanner';
-import { UPCOMING_EVENTS_PREVIEW } from '@/lib/homePreviewData';
+import { subscribePublicEvents } from '@/lib/firestoreService';
+import { getUpcomingEvents } from '@/lib/eventUtils';
+import type { CalendarEventDoc } from '@/lib/types';
 import { HiOutlineCalendarDays } from 'react-icons/hi2';
 
 export default function EventsPage() {
-  const upcomingCount = UPCOMING_EVENTS_PREVIEW.length;
+  const [events, setEvents] = useState<CalendarEventDoc[]>([]);
+
+  useEffect(() => {
+    const unsub = subscribePublicEvents(setEvents);
+    return () => unsub();
+  }, []);
+
+  const upcomingCount = useMemo(() => getUpcomingEvents(events).length, [events]);
 
   return (
     <div
@@ -38,4 +50,3 @@ export default function EventsPage() {
     </div>
   );
 }
-

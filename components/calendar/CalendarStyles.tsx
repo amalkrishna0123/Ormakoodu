@@ -183,7 +183,16 @@ export default function CalendarStyles() {
         height: 2px;
         background: #e91e8c;
       }
-      .ok-date-sunday .ok-gregorian-date { color: #c0185a; }
+      .ok-date-sunday .ok-gregorian-date { color: #dc2626; }
+      .ok-date-holiday .ok-gregorian-date { color: #dc2626; }
+      .ok-date-event .ok-gregorian-date { color: #e91e8c; }
+      .ok-date-event-dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: #e91e8c;
+        margin-top: 2px;
+      }
       .ok-gregorian-date {
         font-size: clamp(18px, 3.5vw, 26px);
         font-weight: 700;

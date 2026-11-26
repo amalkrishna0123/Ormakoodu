@@ -1,19 +1,3 @@
-/**
- * useSwipeNavigation
- *
- * Attaches Pointer Events (which unify mouse, touch, and pen) to a given
- * element ref and calls onNext / onPrev when the user completes a horizontal
- * swipe gesture.
- *
- * Rules:
- *  – Minimum horizontal travel before the gesture is recognised (px).
- *  – Gesture is cancelled if vertical travel exceeds a threshold (prevents
- *    accidental month changes while the user is scrolling the page).
- *  – Only one navigation event fires per pointer-down/up cycle (guards
- *    against repeat firings).
- *  – Event listeners are cleaned up on unmount.
- */
-
 import { useEffect, useRef } from 'react';
 
 interface SwipeOptions {

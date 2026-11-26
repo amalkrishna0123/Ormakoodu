@@ -1,11 +1,9 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { buildMonthData } from "@/lib/calendarData";
-import { HIGHLIGHT_CAROUSEL_ITEMS } from "@/lib/homePreviewData";
 import CalendarPaper from "@/components/calendar/CalendarPaper";
 import CalendarStyles from "@/components/calendar/CalendarStyles";
 import Navbar from "@/components/home/Navbar";
-import WelcomeSection from "@/components/home/WelcomeSection";
 import HighlightCarousel from "@/components/home/HighlightCarousel";
 import FamilyHighlights from "@/components/home/FamilyHighlights";
 import UpcomingEvents from "@/components/home/UpcomingEvents";
@@ -42,7 +40,7 @@ export default function Home() {
         {/* Welcome Banner */}
         {/* <WelcomeSection /> */}
         <div className="px-2">
-          <HighlightCarousel items={HIGHLIGHT_CAROUSEL_ITEMS} />
+          <HighlightCarousel />
         </div>
 
         {/* Main Content: Protected Calendar (primary) + Companion Family Sections */}

@@ -1,0 +1,65 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper: checks authenticated session AND authorized admin document
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAuthorizedAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.role == 'admin'
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active != false;
+    }
+
+    // Admins collection: never readable publicly, only self-readable by the admin
+    match /admins/{adminId} {
+      allow read: if isAuthenticated() && request.auth.uid == adminId;
+      allow write: if false; // Manage admin UIDs directly via Firebase Console / Admin SDK
+    }
+
+    // Events: public can read only visibility == 'public'; admin can read/write all
+    match /events/{eventId} {
+      allow read: if resource.data.visibility == 'public' || isAuthorizedAdmin();
+      allow create, update, delete: if isAuthorizedAdmin();
+    }
+
+    // Event Categories: public read, admin write
+    match /eventCategories/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if isAuthorizedAdmin();
+    }
+
+    // Family Members: public can read only isPublic == true; admin can read/write all
+    match /familyMembers/{memberId} {
+      allow read: if resource.data.isPublic == true || isAuthorizedAdmin();
+      allow create, update, delete: if isAuthorizedAdmin();
+    }
+
+    // Memories: public can read only visibility == 'public'; admin can read/write all
+    match /memories/{memoryId} {
+      allow read: if resource.data.visibility == 'public' || isAuthorizedAdmin();
+      allow create, update, delete: if isAuthorizedAdmin();
+    }
+
+    // Holidays: public read, admin write
+    match /holidays/{holidayId} {
+      allow read: if true;
+      allow create, update, delete: if isAuthorizedAdmin();
+    }
+
+    // Calendar Settings: public read, admin write
+    match /calendarSettings/{settingId} {
+      allow read: if true;
+      allow create, update, delete: if isAuthorizedAdmin();
+    }
+
+    // Application Settings: admin only (contains internal config)
+    match /applicationSettings/{settingId} {
+      allow read, write: if isAuthorizedAdmin();
+    }
+  }
+}
+

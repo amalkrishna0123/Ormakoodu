@@ -5,9 +5,17 @@ const nextConfig: NextConfig = {
   experimental: {
     agentFeedback: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+    ],
+  },
   cacheComponents: true,
   partialPrefetching: true,
-  turbopack: {
+    turbopack: {
     rules: {
       "*.css": {
         loaders: ["@tailwindcss/turbopack"],
@@ -15,6 +23,7 @@ const nextConfig: NextConfig = {
       },
     },
   },
+
 };
 
 export default nextConfig;

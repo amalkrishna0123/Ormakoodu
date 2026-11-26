@@ -1,13 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Navbar from '@/components/home/Navbar';
 import HomeFooter from '@/components/home/HomeFooter';
+import { subscribeCalendarSettings } from '@/lib/firestoreService';
 
 export default function SettingsPage() {
   const [showNakshatram, setShowNakshatram] = useState(true);
   const [familyReminders, setFamilyReminders] = useState(true);
   const [malayalamNumerals, setMalayalamNumerals] = useState(true);
+
+  useEffect(() => {
+    const unsub = subscribeCalendarSettings((settings) => {
+      setShowNakshatram(settings.showNakshatram);
+      setFamilyReminders(settings.familyReminders);
+      setMalayalamNumerals(settings.malayalamNumerals);
+    });
+    return () => unsub();
+  }, []);
 
   return (
     <div
@@ -120,4 +130,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

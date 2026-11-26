@@ -1,8 +1,58 @@
-import React from 'react';
-import { FAMILY_HIGHLIGHT_PREVIEW } from '@/lib/homePreviewData';
+'use client';
+
+import React, { useEffect, useMemo, useState } from 'react';
+import { subscribePublicEvents } from '@/lib/firestoreService';
+import { getUpcomingEvents } from '@/lib/eventUtils';
+import type { CalendarEventDoc } from '@/lib/types';
 
 export default function FamilyHighlights() {
-  const highlight = FAMILY_HIGHLIGHT_PREVIEW;
+  const [events, setEvents] = useState<CalendarEventDoc[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribePublicEvents(
+      (evs) => {
+        setEvents(evs);
+        setLoaded(true);
+      },
+      () => setLoaded(true)
+    );
+    return () => unsub();
+  }, []);
+
+  const nextUpcoming = useMemo(() => {
+    const upcoming = getUpcomingEvents(events);
+    return upcoming[0] ?? null;
+  }, [events]);
+
+  if (!nextUpcoming) {
+    return (
+      <section
+        className="rounded-2xl border border-zinc-200/80 bg-[#fcfbfa] p-5 shadow-[0_2px_12px_rgba(0,0,0,0.04)]"
+        aria-labelledby="family-highlights-heading"
+      >
+        <div className="flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fff0f7] px-2.5 py-1 text-[11px] font-semibold tracking-wide text-[#c0185a] uppercase">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#e91e8c]" aria-hidden="true" />
+            Next Family Occasion
+          </span>
+        </div>
+        <h2
+          id="family-highlights-heading"
+          className="mt-3.5 text-base font-semibold tracking-tight text-zinc-950"
+        >
+          {loaded ? 'No upcoming occasions' : 'Loading occasions…'}
+        </h2>
+        <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+          {loaded
+            ? 'Upcoming family birthdays, anniversaries, and gatherings added by the admin will appear here.'
+            : 'Fetching latest family occasions from Ormakoodu…'}
+        </p>
+      </section>
+    );
+  }
+
+  const { event, gregorianLabel, malayalamDateLabel, daysUntil } = nextUpcoming;
 
   return (
     <section
@@ -15,30 +65,36 @@ export default function FamilyHighlights() {
             className="h-1.5 w-1.5 rounded-full bg-[#e91e8c]"
             aria-hidden="true"
           />
-          {highlight.badge}
+          {event.categoryName}
         </span>
-        <span className="text-xs font-medium text-zinc-400">Preview</span>
+        <span className="text-xs font-medium text-zinc-400">
+          {daysUntil === 0 ? 'Today' : `In ${daysUntil} day${daysUntil === 1 ? '' : 's'}`}
+        </span>
       </div>
 
       <h2
         id="family-highlights-heading"
         className="mt-3.5 text-lg font-semibold tracking-tight text-zinc-950"
       >
-        {highlight.title}
+        {event.title}
       </h2>
-      <p
-        className="mt-0.5 text-sm font-medium text-[#c0185a]"
-        style={{
-          fontFamily:
-            "var(--font-noto-malayalam), 'Noto Sans Malayalam', sans-serif",
-        }}
-      >
-        {highlight.malayalamTitle}
-      </p>
+      {event.malayalamTitle && (
+        <p
+          className="mt-0.5 text-sm font-medium text-[#c0185a]"
+          style={{
+            fontFamily:
+              "var(--font-noto-malayalam), 'Noto Sans Malayalam', sans-serif",
+          }}
+        >
+          {event.malayalamTitle}
+        </p>
+      )}
 
-      <p className="mt-2 text-sm leading-relaxed text-zinc-600">
-        {highlight.subtitle}
-      </p>
+      {event.description && (
+        <p className="mt-2 text-sm leading-relaxed text-zinc-600">
+          {event.description}
+        </p>
+      )}
 
       <div className="mt-3 flex items-center gap-2 text-xs font-medium text-zinc-700">
         <svg
@@ -56,40 +112,43 @@ export default function FamilyHighlights() {
           <line x1="8" x2="8" y1="2" y2="6" />
           <line x1="3" x2="21" y1="10" y2="10" />
         </svg>
-        <span>{highlight.dateText}</span>
+        <span>
+          {gregorianLabel}
+          {event.startTime ? ` • ${event.startTime}` : ''} · {malayalamDateLabel}
+        </span>
       </div>
 
-      {/* Small Reminder Card */}
-      <div className="mt-4 rounded-xl border border-zinc-200/70 bg-white p-3.5">
-        <div className="flex items-start gap-2.5">
-          <span
-            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#fff0f7] text-[#e91e8c]"
-            aria-hidden="true"
-          >
-            <svg
-              className="h-3 w-3"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+      {event.details?.notes && (
+        <div className="mt-4 rounded-xl border border-zinc-200/70 bg-white p-3.5">
+          <div className="flex items-start gap-2.5">
+            <span
+              className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#fff0f7] text-[#e91e8c]"
+              aria-hidden="true"
             >
-              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-            </svg>
-          </span>
-          <div>
-            <p className="text-xs font-semibold text-zinc-900">
-              Family Reminder
-            </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">
-              {highlight.reminderNote}
-            </p>
+              <svg
+                className="h-3 w-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+              </svg>
+            </span>
+            <div>
+              <p className="text-xs font-semibold text-zinc-900">
+                Family Reminder
+              </p>
+              <p className="mt-0.5 text-xs leading-relaxed text-zinc-500">
+                {event.details.notes}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }
-
