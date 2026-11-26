@@ -15,6 +15,7 @@ import {
 import { getEventsForMonthMap } from '@/lib/eventUtils';
 import type { CalendarEventDoc, CalendarSettingsDoc } from '@/lib/types';
 import type { KeralaOccasion } from '@/lib/keralaHolidays';
+import { fetchKeralaFestivals } from '@/lib/keralaFestivals';
 import Image from 'next/image';
 import logo from '../../src/assets/ormakoodu-logo.png';
 
@@ -43,6 +44,7 @@ export default function CalendarPaper({ monthData: initialMonthData }: CalendarP
   const [viewMonthIndex, setViewMonthIndex] = useState(initialMonthData.gregorianMonthIndex);
   const [events, setEvents] = useState<CalendarEventDoc[]>([]);
   const [holidays, setHolidays] = useState<KeralaOccasion[]>([]);
+  const [externalFestivals, setExternalFestivals] = useState<KeralaOccasion[]>([]);
   const [settings, setSettings] = useState<CalendarSettingsDoc>({
     showNakshatram: true,
     familyReminders: true,
@@ -55,10 +57,15 @@ export default function CalendarPaper({ monthData: initialMonthData }: CalendarP
   const transitionLockRef = useRef(false);
 
   useEffect(() => {
+    let active = true;
     const unsubEvents = subscribePublicEvents(setEvents);
     const unsubHolidays = subscribeHolidays(setHolidays);
     const unsubSettings = subscribeCalendarSettings(setSettings);
+    fetchKeralaFestivals().then((fests) => {
+      if (active) setExternalFestivals(fests);
+    });
     return () => {
+      active = false;
       unsubEvents();
       unsubHolidays();
       unsubSettings();
@@ -76,9 +83,10 @@ export default function CalendarPaper({ monthData: initialMonthData }: CalendarP
     return buildMonthData(viewYear, viewMonthIndex, {
       eventDates,
       firestoreHolidays: holidays,
+      externalFestivals,
       useMalayalamNumerals: settings.malayalamNumerals,
     });
-  }, [viewYear, viewMonthIndex, eventDates, holidays, settings.malayalamNumerals]);
+  }, [viewYear, viewMonthIndex, eventDates, holidays, externalFestivals, settings.malayalamNumerals]);
 
   /**
    * Navigate to a neighbouring month.

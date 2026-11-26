@@ -46,7 +46,9 @@ export default function CalendarDateCell({
     >
       <span className="ok-gregorian-date">{day.gregorianDate}</span>
       {day.isCurrentMonth && (
-        <span className="ok-ml-date-num">{day.malayalamDate}</span>
+        <span className="ok-ml-date-num">
+          {day.malayalamMonthMl} {day.malayalamDate}
+        </span>
       )}
       {day.isCurrentMonth && showNakshatram && day.nakshatram && (
         <span className="ok-nakshatram-label">{day.nakshatram}</span>

@@ -144,7 +144,7 @@ export function getUpcomingEvents(
       event,
       occurrenceDate: occurrenceIso,
       gregorianLabel: `${SHORT_MONTHS[parsed.month - 1]} ${parsed.day}`,
-      malayalamDateLabel: `${mlInfo.malayalamMonthMl} ${mlInfo.malayalamDayMl}`,
+      malayalamDateLabel: `${mlInfo.malayalamMonthMl} ${mlInfo.malayalamDay}`,
       daysUntil,
     });
   }

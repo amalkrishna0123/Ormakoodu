@@ -112,15 +112,59 @@ export interface FamilyMemberDoc {
   updatedAt?: unknown;
 }
 
+export type MemoryCategory =
+  | 'Trips'
+  | 'Birthdays'
+  | 'Family'
+  | 'Friends'
+  | 'Festivals'
+  | 'Celebrations'
+  | 'Others';
+
+export const MEMORY_CATEGORIES: MemoryCategory[] = [
+  'Trips',
+  'Birthdays',
+  'Family',
+  'Friends',
+  'Festivals',
+  'Celebrations',
+  'Others',
+];
+
+export interface MemoryAlbum {
+  id: string;
+  name: string;
+  createdAt?: string;
+}
+
 export interface MemoryDoc {
   id: string;
   title: string;
   malayalamTitle?: string;
   dateLabel: string;
+  /** Optional YYYY-MM-DD date */
   eventDate?: string;
   note: string;
+  /** Image or video URL (legacy records use imageUrl; new records set mediaUrl + imageUrl for images) */
   imageUrl?: string;
   imagePublicId?: string;
+  mediaUrl?: string;
+  mediaType?: 'image' | 'video';
+  publicId?: string;
+  category?: MemoryCategory | string;
+  albumId?: string;
+  albumName?: string;
+  /** Metadata fields (extracted from file; never guessed) */
+  fileName?: string;
+  fileSize?: number;
+  fileFormat?: string;
+  width?: number;
+  height?: number;
+  durationSeconds?: number;
+  location?: string;
+  latitude?: number;
+  longitude?: number;
+  capturedAt?: string;
   visibility: EventVisibility;
   createdAt?: unknown;
   updatedAt?: unknown;

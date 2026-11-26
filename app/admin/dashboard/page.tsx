@@ -29,6 +29,7 @@ import {
   uploadImageToCloudinary,
 } from '@/lib/cloudinaryUpload';
 import AdminEventForm from '@/components/admin/AdminEventForm';
+import MemoriesGallery from '@/components/memories/MemoriesGallery';
 import type {
   CalendarEventDoc,
   CalendarSettingsDoc,
@@ -454,75 +455,8 @@ export default function AdminDashboardPage() {
 
         {/* Memories Tab */}
         {activeTab === 'memories' && (
-          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-            <form
-              onSubmit={handleAddMemory}
-              className="space-y-3 rounded-2xl border border-zinc-200 bg-[#fcfbfa] p-5"
-            >
-              <h2 className="text-base font-semibold text-zinc-950">Add Memory</h2>
-              <input
-                type="text"
-                required
-                placeholder="Memory title"
-                value={memTitle}
-                onChange={(e) => setMemTitle(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
-              />
-              <input
-                type="text"
-                placeholder="Malayalam title (Optional)"
-                value={memMlTitle}
-                onChange={(e) => setMemMlTitle(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
-              />
-              <input
-                type="text"
-                required
-                placeholder="Date label (e.g., September 2026)"
-                value={memDateLabel}
-                onChange={(e) => setMemDateLabel(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
-              />
-              <textarea
-                required
-                rows={3}
-                placeholder="Memory note"
-                value={memNote}
-                onChange={(e) => setMemNote(e.target.value)}
-                className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm"
-              />
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/avif"
-                onChange={(e) => setMemFile(e.target.files?.[0] || null)}
-                className="block w-full text-xs text-zinc-600"
-              />
-              <button
-                type="submit"
-                className="w-full rounded-xl bg-[#e91e8c] px-4 py-2 text-sm font-semibold text-white"
-              >
-                Save Memory
-              </button>
-            </form>
-            <div className="rounded-2xl border border-zinc-200 p-5">
-              <h2 className="text-base font-semibold text-zinc-950">Published Memories</h2>
-              <ul className="mt-3 divide-y divide-zinc-100">
-                {memories.map((mem) => (
-                  <li key={mem.id} className="flex items-center justify-between py-2.5 text-sm">
-                    <span>
-                      {mem.title} <span className="text-xs text-zinc-400">({mem.dateLabel})</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => deleteMemory(mem.id)}
-                      className="text-xs text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="mt-6">
+            <MemoriesGallery />
           </div>
         )}
 

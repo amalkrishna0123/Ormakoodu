@@ -7,7 +7,6 @@
 import {
   getMalayalamDateInfo,
   MALAYALAM_MONTHS_ML,
-  toMalayalamNumeral,
 } from './panchangam';
 import {
   getOccasionsMapForMonth,
@@ -95,8 +94,8 @@ function formatISODate(year: number, month1Based: number, day: number): string {
 
 /**
  * Deterministic date-status priority system:
- * 1. Admin-created event on date -> 'event' (pink) — overrides red holidays
- * 2. Sunday, 2nd Saturday, or Official Government Holiday -> 'holiday' (red)
+ * 1. Admin-created event on date -> 'event' (pink) — overrides red holidays & Kerala festivals
+ * 2. Sunday, 2nd Saturday, Official Government Holiday, or Kerala-wide festival (place === 'Kerala') -> 'holiday' (red)
  * 3. Otherwise -> 'normal'
  */
 export function resolveDateStatus(options: {
@@ -104,9 +103,15 @@ export function resolveDateStatus(options: {
   isSunday: boolean;
   isSecondSaturday: boolean;
   isGovernmentHoliday: boolean;
+  isKeralaStateFestival?: boolean;
 }): DateHighlightStatus {
   if (options.hasAdminEvent) return 'event';
-  if (options.isSunday || options.isSecondSaturday || options.isGovernmentHoliday) {
+  if (
+    options.isSunday ||
+    options.isSecondSaturday ||
+    options.isGovernmentHoliday ||
+    options.isKeralaStateFestival
+  ) {
     return 'holiday';
   }
   return 'normal';
@@ -117,6 +122,7 @@ export function resolveDateStatus(options: {
 export interface BuildMonthOptions {
   eventDates?: Set<string>;
   firestoreHolidays?: KeralaOccasion[];
+  externalFestivals?: KeralaOccasion[];
   useMalayalamNumerals?: boolean;
 }
 
@@ -147,9 +153,13 @@ export function buildMonthData(
   const nextMonthYear = nextMonthDate.getFullYear();
   const nextMonth1 = nextMonthDate.getMonth() + 1;
 
-  const occasionsMap = getOccasionsMapForMonth(y, m1, options.firestoreHolidays ?? []);
+  const occasionsMap = getOccasionsMapForMonth(
+    y,
+    m1,
+    options.firestoreHolidays ?? [],
+    options.externalFestivals ?? []
+  );
   const eventDates = options.eventDates ?? new Set<string>();
-  const useMlNumerals = options.useMalayalamNumerals ?? true;
 
   const days: CalendarDay[] = [];
 
@@ -161,7 +171,7 @@ export function buildMonthData(
     days.push({
       isoDate,
       gregorianDate: d,
-      malayalamDate: useMlNumerals ? info.malayalamDayMl : String(info.malayalamDay),
+      malayalamDate: String(info.malayalamDay),
       malayalamDay: info.malayalamDay,
       malayalamMonthMl: info.malayalamMonthMl,
       malayalamMonthEn: info.malayalamMonthEn,
@@ -206,6 +216,7 @@ export function buildMonthData(
 
     const occasions = occasionsMap[isoDate] ?? [];
     const isGovernmentHoliday = occasions.some((o) => o.isGovernmentHoliday);
+    const isKeralaStateFestival = occasions.some((o) => o.isKeralaStateFestival);
     const hasTraditionalFestival = occasions.some((o) => o.isTraditionalFestival);
     const hasAdminEvent = eventDates.has(isoDate);
 
@@ -219,12 +230,13 @@ export function buildMonthData(
       isSunday,
       isSecondSaturday,
       isGovernmentHoliday,
+      isKeralaStateFestival,
     });
 
     days.push({
       isoDate,
       gregorianDate: d,
-      malayalamDate: useMlNumerals ? info.malayalamDayMl : String(info.malayalamDay),
+      malayalamDate: String(info.malayalamDay),
       malayalamDay: info.malayalamDay,
       malayalamMonthMl: info.malayalamMonthMl,
       malayalamMonthEn: info.malayalamMonthEn,
@@ -256,7 +268,7 @@ export function buildMonthData(
     days.push({
       isoDate,
       gregorianDate: nextD,
-      malayalamDate: useMlNumerals ? info.malayalamDayMl : String(info.malayalamDay),
+      malayalamDate: String(info.malayalamDay),
       malayalamDay: info.malayalamDay,
       malayalamMonthMl: info.malayalamMonthMl,
       malayalamMonthEn: info.malayalamMonthEn,
@@ -290,7 +302,7 @@ export function buildMonthData(
     gregorianMonthIndex: m,
     malayalamMonth: malayalamMonthHeader,
     kollavarsham: mainKollavarsham,
-    panchangamInfo: `${toMalayalamNumeral(mainKollavarsham)} കൊല്ലവർഷം`,
+    panchangamInfo: `${mainKollavarsham} കൊല്ലവർഷം`,
     days,
   };
 }

@@ -204,7 +204,8 @@ export default function CalendarStyles() {
         font-family: var(--font-noto-malayalam);
         font-size: clamp(9px, 1.5vw, 11px);
         color: #888;
-        line-height: 1;
+        line-height: 1.15;
+        text-align: center;
         margin-bottom: 3px;
       }
       .ok-nakshatram-label {

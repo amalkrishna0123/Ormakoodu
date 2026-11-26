@@ -17,7 +17,9 @@ export interface KeralaOccasion {
   description?: string;
   isGovernmentHoliday: boolean;
   isTraditionalFestival: boolean;
-  source: 'official-kerala-gad' | 'traditional-panchangam' | 'firestore';
+  /** True when external festival has location.place === 'Kerala' (highlighted in red unless overridden by an admin event) */
+  isKeralaStateFestival?: boolean;
+  source: 'official-kerala-gad' | 'traditional-panchangam' | 'firestore' | 'kerala-festivals-json';
 }
 
 /**
@@ -521,19 +523,43 @@ export const BASELINE_KERALA_OCCASIONS: KeralaOccasion[] = [
   },
 ];
 
+function isDuplicateOccasionTitle(existing: Iterable<KeralaOccasion>, candidateTitle: string): boolean {
+  const norm = candidateTitle.trim().toLowerCase();
+  if (!norm) return false;
+  for (const occ of existing) {
+    const existingNorm = occ.title.trim().toLowerCase();
+    if (
+      existingNorm === norm ||
+      existingNorm.includes(norm) ||
+      norm.includes(existingNorm)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
- * Merge baseline Kerala occasions with any Firestore holiday documents.
- * Firestore documents with the same `id` override baseline entries.
+ * Merge baseline Kerala occasions, external festival JSON entries, and Firestore holiday documents.
+ * Deduplicates by `id` and normalized title per date so the calendar never shows duplicates.
  */
 export function getOccasionsForDate(
   isoDate: string,
-  firestoreHolidays: KeralaOccasion[] = []
+  firestoreHolidays: KeralaOccasion[] = [],
+  externalFestivals: KeralaOccasion[] = []
 ): KeralaOccasion[] {
   const byId = new Map<string, KeralaOccasion>();
   for (const occ of BASELINE_KERALA_OCCASIONS) {
     if (occ.date === isoDate) {
       byId.set(occ.id, occ);
     }
+  }
+  for (const occ of externalFestivals) {
+    if (occ.date !== isoDate) continue;
+    if (!byId.has(occ.id) && isDuplicateOccasionTitle(byId.values(), occ.title)) {
+      continue;
+    }
+    byId.set(occ.id, occ);
   }
   for (const occ of firestoreHolidays) {
     if (occ.date === isoDate) {
@@ -546,12 +572,33 @@ export function getOccasionsForDate(
 export function getOccasionsMapForMonth(
   year: number,
   month1Based: number,
-  firestoreHolidays: KeralaOccasion[] = []
+  firestoreHolidays: KeralaOccasion[] = [],
+  externalFestivals: KeralaOccasion[] = []
 ): Record<string, KeralaOccasion[]> {
   const prefix = `${year}-${String(month1Based).padStart(2, '0')}-`;
   const byDate: Record<string, Map<string, KeralaOccasion>> = {};
 
-  for (const occ of [...BASELINE_KERALA_OCCASIONS, ...firestoreHolidays]) {
+  for (const occ of BASELINE_KERALA_OCCASIONS) {
+    if (!occ.date.startsWith(prefix)) continue;
+    if (!byDate[occ.date]) {
+      byDate[occ.date] = new Map<string, KeralaOccasion>();
+    }
+    byDate[occ.date].set(occ.id, occ);
+  }
+
+  for (const occ of externalFestivals) {
+    if (!occ.date.startsWith(prefix)) continue;
+    if (!byDate[occ.date]) {
+      byDate[occ.date] = new Map<string, KeralaOccasion>();
+    }
+    const map = byDate[occ.date];
+    if (!map.has(occ.id) && isDuplicateOccasionTitle(map.values(), occ.title)) {
+      continue;
+    }
+    map.set(occ.id, occ);
+  }
+
+  for (const occ of firestoreHolidays) {
     if (!occ.date.startsWith(prefix)) continue;
     if (!byDate[occ.date]) {
       byDate[occ.date] = new Map<string, KeralaOccasion>();

@@ -72,9 +72,13 @@ export async function POST(req: NextRequest) {
     ? requestedFolder
     : 'ormakoodu/events';
 
-  const timestamp      = Math.round(Date.now() / 1000);
-  const allowedFormats = 'jpg,jpeg,png,webp,avif';
-  const paramsToSign   = `allowed_formats=${allowedFormats}&folder=${folder}&timestamp=${timestamp}`;
+  const resourceType = body?.resourceType === 'video' ? 'video' : 'image';
+  const timestamp = Math.round(Date.now() / 1000);
+  const allowedFormats =
+    resourceType === 'video'
+      ? 'mp4,mov,webm,m4v'
+      : 'jpg,jpeg,png,webp,avif,heic,gif';
+  const paramsToSign = `allowed_formats=${allowedFormats}&folder=${folder}&timestamp=${timestamp}`;
 
   const signature = crypto
     .createHash('sha1')
@@ -88,6 +92,7 @@ export async function POST(req: NextRequest) {
     cloudName,
     folder,
     allowedFormats,
+    resourceType,
   });
 }
 

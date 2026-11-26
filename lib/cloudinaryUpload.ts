@@ -146,7 +146,138 @@ export async function uploadImageToCloudinary(
   };
 }
 
-export async function deleteImageFromCloudinary(publicId: string): Promise<void> {
+export const ALLOWED_VIDEO_MIME_TYPES = new Set([
+  'video/mp4',
+  'video/quicktime',
+  'video/webm',
+  'video/x-m4v',
+]);
+
+export const MAX_VIDEO_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB
+
+export function validateMediaFile(file: File): string | null {
+  if (file.type.startsWith('video/')) {
+    if (!ALLOWED_VIDEO_MIME_TYPES.has(file.type)) {
+      return 'Unsupported video format. Allowed formats: MP4, MOV, WebM, M4V.';
+    }
+    if (file.size > MAX_VIDEO_SIZE_BYTES) {
+      return 'Video file size exceeds the 100 MB limit.';
+    }
+    return null;
+  }
+  return validateImageFile(file);
+}
+
+function uploadFormWithProgress(
+  url: string,
+  formData: FormData,
+  onProgress?: (percent: number) => void
+): Promise<Record<string, unknown>> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new Error('Invalid Cloudinary response'));
+        }
+      } else {
+        reject(new Error(`Cloudinary upload failed (${xhr.status}): ${xhr.responseText}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Network error during media upload'));
+    xhr.send(formData);
+  });
+}
+
+export interface CloudinaryMediaUploadResult extends CloudinaryUploadResult {
+  resourceType: 'image' | 'video';
+  duration?: number;
+}
+
+/**
+ * Upload a photo or video to Cloudinary with real-time progress reporting.
+ */
+export async function uploadMediaToCloudinary(
+  file: File,
+  folder: 'ormakoodu/events' | 'ormakoodu/memories' = 'ormakoodu/memories',
+  onProgress?: (percent: number) => void
+): Promise<CloudinaryMediaUploadResult> {
+  const validationError = validateMediaFile(file);
+  if (validationError) {
+    throw new Error(validationError);
+  }
+
+  const auth = getFirebaseAuth();
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Admin authentication required before uploading media.');
+  }
+
+  const resourceType: 'image' | 'video' = file.type.startsWith('video/') ? 'video' : 'image';
+  const idToken = await user.getIdToken();
+
+  const sigRes = await fetch(`${PROXY_BASE}/cloudinary-signature`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${idToken}`,
+    },
+    body: JSON.stringify({ folder, resourceType }),
+  });
+
+  if (!sigRes.ok) {
+    const errText = await sigRes.text();
+    throw new Error(`Failed to obtain upload signature: ${errText}`);
+  }
+
+  const sig = (await sigRes.json()) as {
+    signature: string;
+    timestamp: number;
+    apiKey: string;
+    cloudName: string;
+    folder: string;
+    allowedFormats: string;
+    resourceType: 'image' | 'video';
+  };
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('api_key', sig.apiKey);
+  formData.append('timestamp', String(sig.timestamp));
+  formData.append('signature', sig.signature);
+  formData.append('folder', sig.folder);
+  formData.append('allowed_formats', sig.allowedFormats);
+
+  const data = await uploadFormWithProgress(
+    `https://api.cloudinary.com/v1_1/${sig.cloudName}/${sig.resourceType}/upload`,
+    formData,
+    onProgress
+  );
+
+  return {
+    secureUrl: String(data.secure_url || ''),
+    publicId: String(data.public_id || ''),
+    format: String(data.format || '').toUpperCase(),
+    bytes: Number(data.bytes || file.size),
+    width: Number(data.width || 0),
+    height: Number(data.height || 0),
+    duration: typeof data.duration === 'number' ? data.duration : undefined,
+    resourceType: sig.resourceType,
+  };
+}
+
+export async function deleteImageFromCloudinary(
+  publicId: string,
+  resourceType: 'image' | 'video' = 'image'
+): Promise<void> {
   if (!publicId) return;
   const auth = getFirebaseAuth();
   const user = auth.currentUser;
@@ -159,7 +290,7 @@ export async function deleteImageFromCloudinary(publicId: string): Promise<void>
       'Content-Type': 'application/json',
       Authorization: `Bearer ${idToken}`,
     },
-    body: JSON.stringify({ publicId }),
+    body: JSON.stringify({ publicId, resourceType }),
   });
 }
 

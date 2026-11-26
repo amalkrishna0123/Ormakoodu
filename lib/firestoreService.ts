@@ -20,6 +20,7 @@ import {
   type CalendarEventDoc,
   type EventCategoryDoc,
   type FamilyMemberDoc,
+  type MemoryAlbum,
   type MemoryDoc,
   type CalendarSettingsDoc,
 } from './types';
@@ -386,29 +387,81 @@ export async function deleteFamilyMember(memberId: string): Promise<void> {
   await deleteDoc(doc(db, COLLECTIONS.familyMembers, memberId));
 }
 
+function stripUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  return clean;
+}
+
 export async function saveMemory(
   memory: Omit<MemoryDoc, 'id' | 'createdAt' | 'updatedAt'>,
   existingId?: string
 ): Promise<string> {
   const db = getFirebaseDb();
+  const payload = stripUndefined(memory as Record<string, unknown>);
   if (existingId) {
     await updateDoc(doc(db, COLLECTIONS.memories, existingId), {
-      ...memory,
+      ...payload,
       updatedAt: serverTimestamp(),
     });
     return existingId;
   }
   const ref = await addDoc(collection(db, COLLECTIONS.memories), {
-    ...memory,
+    ...payload,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
   return ref.id;
 }
 
+export async function updateMemoryFields(
+  memoryId: string,
+  fields: Partial<Omit<MemoryDoc, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<void> {
+  const db = getFirebaseDb();
+  const payload = stripUndefined(fields as Record<string, unknown>);
+  await updateDoc(doc(db, COLLECTIONS.memories, memoryId), {
+    ...payload,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function deleteMemory(memoryId: string): Promise<void> {
   const db = getFirebaseDb();
   await deleteDoc(doc(db, COLLECTIONS.memories, memoryId));
+}
+
+export function subscribeMemoryAlbums(
+  onData: (albums: MemoryAlbum[]) => void,
+  onError?: (err: Error) => void
+): Unsubscribe {
+  const db = getFirebaseDb();
+  return onSnapshot(
+    doc(db, COLLECTIONS.calendarSettings, 'memoryAlbums'),
+    (snap) => {
+      if (snap.exists()) {
+        const list = snap.data()?.albums;
+        onData(Array.isArray(list) ? (list as MemoryAlbum[]) : []);
+      } else {
+        onData([]);
+      }
+    },
+    (err) => onError?.(err)
+  );
+}
+
+export async function saveMemoryAlbums(albums: MemoryAlbum[]): Promise<void> {
+  const db = getFirebaseDb();
+  await setDoc(
+    doc(db, COLLECTIONS.calendarSettings, 'memoryAlbums'),
+    {
+      albums,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
 }
 
 export async function saveHoliday(
